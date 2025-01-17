@@ -13,6 +13,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/unrolled/render v1.7.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect

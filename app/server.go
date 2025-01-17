@@ -35,6 +35,17 @@ type DBConfig struct {
 func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcome to "+ appConfig.AppName + " API server!")
 
+	server.ConnectDB(dbConfig)
+	server.initializeRoutes()
+}
+
+
+func (server *Server) Run(addr string) {
+	fmt.Printf("Server is running on port %s\n", addr)
+	log.Fatal(http.ListenAndServe(addr, server.Router))
+}
+
+func (server *Server) ConnectDB(dbConfig DBConfig) {
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta", dbConfig.DBHost, dbConfig.DBUser, dbConfig.DBPass, dbConfig.DBName, dbConfig.DBPort)
 	server.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -45,13 +56,15 @@ func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
     fmt.Println("Connected to the database!")
   }
 
-	server.Router = mux.NewRouter()
-	server.initializeRoutes()
-}
+	for _, model := range RegisterModesl() {
+		err = server.DB.Debug().AutoMigrate(model.Model)
 
-func (server *Server) Run(addr string) {
-	fmt.Printf("Server is running on port %s\n", addr)
-	log.Fatal(http.ListenAndServe(addr, server.Router))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	fmt.Println("Database migrated successfully!")
 }
 
 func getEnv(key, fallback string) string {
