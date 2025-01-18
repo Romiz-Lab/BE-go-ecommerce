@@ -9,7 +9,7 @@ import (
 
 func (server *Server) initializeRoutes() {
 	server.Router = mux.NewRouter()
-	server.Router.HandleFunc("/api", controllers.Home).Methods("GET")
+	server.Router.HandleFunc("/", controllers.Home).Methods("GET")
 
 	staticDir := http.Dir("./assets/")
 	staticDirHandler := http.StripPrefix("/public/", http.FileServer(staticDir))
