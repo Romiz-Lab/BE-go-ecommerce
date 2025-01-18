@@ -79,7 +79,7 @@ func (server *Server) dbMigrate() {
 	fmt.Println("Database migrated successfully!")
 }
 
-func (server *Server) initCommands(dbConfig DBConfig) {
+func (server *Server) initCommands(appConfig AppConfig, dbConfig DBConfig) {
 	server.ConnectDB(dbConfig)
 
 	cmdApp := &cli.App{
