@@ -1,6 +1,7 @@
 package app
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/Romiz-Lab/BE-go-ecommerce/database/seeders"
 	"github.com/gorilla/mux"
 	"github.com/lpernett/godotenv"
+	"github.com/urfave/cli/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -36,9 +38,7 @@ type DBConfig struct {
 func (server *Server) Initialize(appConfig AppConfig, dbConfig DBConfig) {
 	fmt.Println("Welcome to "+ appConfig.AppName + " API server!")
 
-	server.ConnectDB(dbConfig)
 	server.initializeRoutes()
-	seeders.DBSeed(server.DB)
 }
 
 
@@ -58,8 +58,18 @@ func (server *Server) ConnectDB(dbConfig DBConfig) {
     fmt.Println("Connected to the database!")
   }
 
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+func (server *Server) dbMigrate() {
 	for _, model := range RegisterModesl() {
-		err = server.DB.Debug().AutoMigrate(model.Model)
+		err := server.DB.Debug().AutoMigrate(model.Model)
 
 		if err != nil {
 			log.Fatal(err)
@@ -69,11 +79,38 @@ func (server *Server) ConnectDB(dbConfig DBConfig) {
 	fmt.Println("Database migrated successfully!")
 }
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
+func (server *Server) initCommands(dbConfig DBConfig) {
+	server.ConnectDB(dbConfig)
+
+	cmdApp := &cli.App{
+		Name: "Go Ecommerce",
+		Usage: "CLI for Go Ecommerce",
+		Commands: []*cli.Command{
+			{
+				Name: "db:migrate",
+				Usage: "Migrate database",
+				Action: func(c *cli.Context) error {
+					server.dbMigrate()
+					return nil
+				},
+			},
+			{
+				Name: "db:seed",
+				Usage: "Seed the database with sample data",
+				Action: func(c *cli.Context) error {
+					err := seeders.DBSeed(server.DB)
+					if err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+		},
 	}
-	return fallback
+
+	if err := cmdApp.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func Run() {
@@ -96,6 +133,12 @@ func Run() {
 	dbConfig.DBName = getEnv("DB_NAME", "go_commerce")
 	dbConfig.DBPort = getEnv("DB_PORT", "5432")
 
-	server.Initialize(appConfig, dbConfig)
-	server.Run(":" + appConfig.AppPort)
+	flag.Parse()
+	arg := flag.Arg(0)
+	if arg != "" {
+		server.initCommands(appConfig, dbConfig)
+	} else {
+		server.Initialize(appConfig, dbConfig)
+		server.Run(":" + appConfig.AppPort)
+	}
 }
